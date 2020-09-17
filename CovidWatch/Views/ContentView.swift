@@ -6,24 +6,24 @@
 import SwiftUI
 
 struct ContentView: View {
-    
-    @EnvironmentObject var userData: UserData
-    
+
     @EnvironmentObject var localStore: LocalStore
-    
+
+    @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
+
     var body: some View {
         VStack {
-            if !userData.isOnboardingCompleted {
+            if !localStore.isOnboardingCompleted {
                 Splash().transition(.slide)
             } else {
-                if !userData.isSetupCompleted {
-                    Setup().transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                if !localStore.isSetupCompleted {
+                    Setup1().transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
                 } else {
                     Home().transition(.move(edge: .trailing))
                 }
             }
         }
-    }        
+    }
 }
 
 struct ContentView_Previews: PreviewProvider {

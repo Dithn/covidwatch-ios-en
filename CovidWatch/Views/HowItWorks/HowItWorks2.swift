@@ -9,36 +9,28 @@ struct HowItWorks2: View {
     var body: some View {
 
         ScrollView(.vertical, showsIndicators: false) {
-            
+
             VStack(spacing: 0) {
-                
-                Spacer(minLength: .headerHeight)
-                
-                Text("How It Works".uppercased())
-                    .font(.custom("Montserrat-Regular", size: 14))
-                    .foregroundColor(Color("Title Text Color"))
-                    .padding(.horizontal, 2 * .standardSpacing)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Text("Diagnosis Reports")
-                    .modifier(HowItWorksTitleText())
-                    .padding(.horizontal, 2 * .standardSpacing)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
+
+                Spacer(minLength: .headerHeight + .standardSpacing)
+
+                HowItWorksTitleText(text: Text(verbatim: NSLocalizedString("HOW_IT_WORKS_TITLE", comment: "").uppercased()))
+
+                HowItWorksSubtitleText(text: Text("HOW_IT_WORKS_2_SUBTITLE"))
+
                 Spacer(minLength: .standardSpacing)
-                
-                Image("How it Works 02")
+
+                Image("How it Works 2")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
+                    .accessibility(label: Text("HOW_IT_WORKS_2_IMAGE_ACCESSIBILITY_LABEL"))
                     .padding(.horizontal, 2 * .standardSpacing)
 
                 Spacer(minLength: .standardSpacing)
-                
-                Text("A few days later, Sam tests positive for COVID-19. He enters the verified results into the Covid Watch app.")
-                    .modifier(HowItWorksSubtitleText())
-                    .padding(.horizontal, 2 * .standardSpacing)
-                
-                Spacer(minLength: 3 * .standardSpacing)
+
+                HowItWorksMessageText(text: Text("HOW_IT_WORKS_2_MESSAGE"))
+
+                Spacer(minLength: .footerHeight + .standardSpacing)
             }
         }
     }

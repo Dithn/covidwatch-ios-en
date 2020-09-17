@@ -6,80 +6,99 @@
 import SwiftUI
 
 struct HeaderBar: View {
-    
+
     let showMenu: Bool
-    
+
     let showDismissButton: Bool
-    
-    let logoImage: Image
-    
+
+    let showDemoMode: Bool
+
+    let showRegionSelection: Bool
+
     @State var isShowingMenu: Bool = false
-    
-    @EnvironmentObject var userData: UserData
-    
+
     @EnvironmentObject var localStore: LocalStore
-    
+
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
-    
-    init(showMenu: Bool = true, showDismissButton: Bool = false, logoImage: Image = Image("Public Health Authority Generic")) {
+
+    init(
+        showMenu: Bool = true,
+        showDismissButton: Bool = false,
+        showDemoMode: Bool = true,
+        showRegionSelection: Bool = false
+    ) {
         self.showMenu = showMenu
         self.showDismissButton = showDismissButton
-        self.logoImage = logoImage
+        self.showDemoMode = showDemoMode
+        self.showRegionSelection = showRegionSelection
     }
-    
+
     var body: some View {
-        
-        ZStack(alignment: .top) {
-            
+
+        ZStack(alignment: .center) {
+
             BlurView(style: .systemChromeMaterial)
                 .edgesIgnoringSafeArea(.all)
-            
-            HStack {
-                
-                logoImage
-                
-                Spacer()
-                
-                VStack {
-                    Text("DEMO")
-                        .font(.custom("Montserrat-Black", size: 14))
-                        .foregroundColor(Color("Subtitle Text Color"))
-                    Text("Sandbox Mode")
-                        .font(.custom("Montserrat-Regular", size: 14))
-                        .foregroundColor(Color("Subtitle Text Color"))
-                }
-                
-                Spacer()
-                
-                if self.showMenu || self.showDismissButton {
-                    if self.showMenu {
-                        Button(action: {
-                            self.isShowingMenu.toggle()
-                        }) {
-                            Image("Menu Button").frame(minWidth: 44, minHeight: 44)
-                        }.sheet(isPresented: self.$isShowingMenu) {
-                            Menu()
-                                .environmentObject(self.userData)
-                                .environmentObject(self.localStore)
-                        }
-                    }                
-                    if self.showDismissButton {
-                        Button(action: {
-                            self.presentationMode.wrappedValue.dismiss()
-                        }) {
-                            Image("Dismiss Button")
-                                .frame(minWidth: 44, minHeight: 44)
-                        }
-                    }
-                } else {
+
+            VStack(alignment: .leading, spacing: 0) {
+
+                HStack {
+
+                    Image(self.localStore.region.logoImageName)
+                        .accessibility(label: Text("GENERIC_PUBLIC_HEALTH_DEPARTMENT_IMAGE_ACCESSIBILITY_LABEL"))
+
                     Spacer()
+
+                    #if DEBUG_CALIBRATION
+                    Text(verbatim: NSLocalizedString("DEMO_TITLE", comment: "").uppercased())
+                        .font(.custom("Montserrat-Black", size: 14))
+                        .foregroundColor(Color(UIColor.systemGray4))
+                    Spacer()
+                    #endif
+
+                    if self.showMenu || self.showDismissButton {
+                        if self.showMenu {
+                            Button(action: {
+                                self.isShowingMenu.toggle()
+                            }) {
+                                Image("Menu Button")
+                                    .frame(minWidth: .minTappableTargetDimension, minHeight: .minTappableTargetDimension)
+                                    .accessibility(label: Text("MENU"))
+                                    .accessibility(hint: Text("MENU_ACCESSIBILITY_HINT"))
+                            }.sheet(isPresented: self.$isShowingMenu) {
+                                Menu().environmentObject(self.localStore)
+                            }
+                        }
+                        if self.showDismissButton {
+                            Button(action: {
+                                self.presentationMode.wrappedValue.dismiss()
+                            }) {
+                                Image("Dismiss Button")
+                                    .frame(minWidth: .minTappableTargetDimension, minHeight: .minTappableTargetDimension)
+                                    .accessibility(label: Text("DISMISS"))
+                                    .accessibility(hint: Text("DISMISS_ACCESSIBILITY_HINT"))
+                            }
+                        }
+                    } else {
+                        Spacer()
+                    }
+
                 }
-                                
+                .padding(.horizontal, 2 * .standardSpacing)
+
+                if self.showRegionSelection {
+                    SelectedRegion()
+                        .padding(.horizontal, 2 * .standardSpacing)
+                }
             }
-            .padding(.top, 2 * .standardSpacing)
-            .padding(.horizontal, 2 * .standardSpacing)
-            
-        }.frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .headerHeight, alignment: .topLeading)
+
+        }.frame(
+            minWidth: 0,
+            maxWidth: .infinity,
+            minHeight: 0,
+            maxHeight: self.showRegionSelection ? .largeHeaderHeight : .headerHeight,
+            alignment: .topLeading
+        )
     }
 }
 

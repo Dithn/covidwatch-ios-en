@@ -5,102 +5,135 @@
 
 import SwiftUI
 
-
 struct PossibleExposureSummary: View {
-    
+
     @EnvironmentObject var localStore: LocalStore
-    
+
     func maxTotalRiscScore() -> UInt8 {
-        self.localStore.exposures.max(by: { $0.totalRiskScore < $1.totalRiskScore })?.totalRiskScore ?? 0
+        self.localStore.exposuresInfos.max(by: { $0.totalRiskScore < $1.totalRiskScore })?.totalRiskScore ?? 0
     }
-    
+
+    func daysSinceLastExposure() -> Int? {
+        if self.localStore.exposuresInfos.isEmpty {
+            return nil
+        }
+        return Calendar.current.dateComponents([.day], from: self.localStore.exposuresInfos.first!.date, to: Date()).day ?? 0
+    }
+
+    func accessibilityLabel() -> String {
+
+        var components: [String] = []
+
+        components.append(NSLocalizedString("HOME_POSSIBLE_EXPOSURES_SUMMARY_TITLE", comment: ""))
+
+        if let days = daysSinceLastExposure() {
+            components.append(
+                String.localizedStringWithFormat(NSLocalizedString("%d days since last exposure", comment: ""), days)
+            )
+        } else {
+            components.append(NSLocalizedString("UNKNOWN_DAYS_SINCE_LAST_EXPOSURE", comment: ""))
+        }
+
+        components.append(String.localizedStringWithFormat(NSLocalizedString("%d exposures in the last 14 days", comment: ""), self.localStore.exposuresInfos.count))
+
+        components.append(String.localizedStringWithFormat(NSLocalizedString("HOME_TOTAL_RISK_SCORE_ACCESSIBILITY_LABEL", comment: ""), self.maxTotalRiscScore()))
+
+        return components.joined(separator: ", ")
+    }
+
     let dateFormatter: DateFormatter = {
         let dateFormatter = DateFormatter()
         dateFormatter.doesRelativeDateFormatting = true
         dateFormatter.dateStyle = .medium
         return dateFormatter
     }()
-    
+
     var body: some View {
-        
+
         VStack(spacing: 0) {
-            
+
+            Divider()
+
+            Text("HOME_POSSIBLE_EXPOSURES_SUMMARY_TITLE")
+                .font(.custom("Montserrat-Bold", size: 16))
+                .foregroundColor(Color("Text Color"))
+                .padding(.horizontal, 2 * .standardSpacing)
+                .frame(maxWidth: .infinity, minHeight: .minTappableTargetDimension, alignment: .center)
+                .background(Color(UIColor.systemGray6))
+
+            Divider()
+
             HStack {
-                
+
                 VStack(alignment: .leading, spacing: .standardSpacing) {
-                    
-                    HStack(spacing: .standardSpacing) {
-                        
-                        Text(verbatim: self.localStore.exposures.isEmpty ? "-" :  String(Calendar.current.dateComponents([.day], from: self.localStore.exposures.first!.date, to: Date()).day ?? 0))
-                            .font(.custom("Montserrat-SemiBold", size: 48))
-                            .foregroundColor(Color("Title Text Color"))
-                            .frame(minWidth: 6 * .standardSpacing, alignment: .trailing)
-                        
-                        VStack(alignment: .leading) {
-                            
-                            Text("days")
-                                .font(.custom("Montserrat-Bold", size: 16))
-                                .foregroundColor(Color("Title Text Color"))
-                            
-                            Text("since last exposure")
-                                .font(.custom("Montserrat-Regular", size: 14))
-                                .foregroundColor(Color("Title Text Color"))
-                            
-                        }
+
+                    HStack {
+
+                        Text(verbatim: self.localStore.exposuresInfos.isEmpty ? "-" :  String(Calendar.current.dateComponents([.day], from: self.localStore.exposuresInfos.first!.date, to: Date()).day ?? 0))
+                            .modifier(PossibleExposureSummaryValueViewModifier())
+                            .background(Capsule(style: .circular).foregroundColor(Color(UIColor.systemGray2)))
+
+                        Text("HOME_DAYS_ROW_1_LABEL")
+                            .font(.custom("Montserrat-Bold", size: 13))
+                            .foregroundColor(Color("Text Color"))
+
+                            + Text(verbatim: " ") +
+
+                            Text("HOME_DAYS_ROW_2_LABEL")
+                                .font(.custom("Montserrat-Regular", size: 13))
+                                .foregroundColor(Color("Text Color"))
                     }
-                    
-                    HStack(spacing: .standardSpacing) {
-                        
-                        Text(verbatim: NumberFormatter.localizedString(from: NSNumber(value: self.localStore.exposures.count), number: .decimal))
-                            .font(.custom("Montserrat-SemiBold", size: 48))
-                            .foregroundColor(Color("Title Text Color"))
-                            .frame(minWidth: 6 * .standardSpacing, alignment: .trailing)
-                        
-                        VStack(alignment: .leading) {
-                            
-                            Text("total exposures")
-                                .font(.custom("Montserrat-Bold", size: 16))
-                                .foregroundColor(Color("Title Text Color"))
-                            
-                            Text("in the last 14 days")
-                                .font(.custom("Montserrat-Regular", size: 14))
-                                .foregroundColor(Color("Title Text Color"))
-                            
-                        }
+
+                    HStack {
+
+                        Text(verbatim: NumberFormatter.localizedString(from: NSNumber(value: self.localStore.exposuresInfos.count), number: .decimal))
+                            .modifier(PossibleExposureSummaryValueViewModifier())
+                            .background(Capsule(style: .circular).foregroundColor(Color(UIColor.systemGray2)))
+
+                        Text("HOME_TOTAL_EXPOSURES_ROW_1_LABEL")
+                            .font(.custom("Montserrat-Bold", size: 13))
+                            .foregroundColor(Color("Text Color"))
+
+                            + Text(verbatim: " ") +
+
+                            Text("HOME_TOTAL_EXPOSURES_ROW_2_LABEL")
+                                .font(.custom("Montserrat-Regular", size: 13))
+                                .foregroundColor(Color("Text Color"))
                     }
-                    
-                    HStack(spacing: .standardSpacing) {
-                        
+
+                    HStack {
+
                         Text(verbatim: String(maxTotalRiscScore()))
-                            .font(.custom("Montserrat-SemiBold", size: 48))
-                            .foregroundColor( maxTotalRiscScore() > 6 ?
-                                Color("Alert Critical Color") : Color("Title Text Color"))
-                            .frame(minWidth: 6 * .standardSpacing, alignment: .trailing)
-                        
-                        VStack(alignment: .leading) {
-                            
-                            Text("total risk score")
-                                .font(.custom("Montserrat-Bold", size: 16))
-                                .foregroundColor(Color("Title Text Color"))
-                            
-                            Text("(1-8 scale)")
-                                .font(.custom("Montserrat-Regular", size: 14))
-                                .foregroundColor(Color("Title Text Color"))
-                            
-                        }
+                            .modifier(PossibleExposureSummaryValueViewModifier())
+                            .background(Capsule(style: .circular).foregroundColor(maxTotalRiscScore().level == .high ?
+                            Color("Alert High Color") : Color(UIColor.systemGray2)))
+
+                        Text("HOME_TOTAL_RISK_SCORE_ROW_1_LABEL")
+                            .font(.custom("Montserrat-Bold", size: 13))
+                            .foregroundColor(Color("Text Color"))
+
+                            + Text(verbatim: " ") +
+
+                            Text("HOME_TOTAL_RISK_SCORE_ROW_2_LABEL")
+                                .font(.custom("Montserrat-Regular", size: 13))
+                                .foregroundColor(Color("Text Color"))
                     }
                 }
-                
+                .padding(.horizontal, 2 * .standardSpacing)
+
                 Spacer()
-                
+
                 Image("Right Arrow-1")
+                    .padding(.trailing, 2 * .standardSpacing)
             }
             .padding(.vertical, .standardSpacing)
-            .padding(.leading, 2 * .standardSpacing)
-            .padding(.trailing, .standardSpacing)
-            
+
+            Divider()
+
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .border(Color("Button Border Color"), width: 1)
+            .accessibilityElement(children: .combine)
+            .accessibility(label: Text(verbatim: accessibilityLabel()))
+            .accessibility(hint: Text("SHOWS_MORE_INFO_ACCESSIBILITY_HINT"))
     }
 }
 

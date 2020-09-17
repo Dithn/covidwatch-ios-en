@@ -4,147 +4,185 @@
 //
 
 import SwiftUI
+import os.log
 
 struct Home: View {
-    
-    @EnvironmentObject var userData: UserData
-    
+
     @EnvironmentObject var localStore: LocalStore
-    
+
     @State var isShowingExposureSettings: Bool = false
-    
+
     @State var isShowingNotificationSettings: Bool = false
-    
-    @State var isShowingPossibleExposures: Bool = false
-    
+
     @State var isShowingReporting: Bool = false
-    
+
+    @State var isShowingRegionSelection: Bool = false
+
     var body: some View {
-        
+
         ZStack(alignment: .top) {
-            
+
             ScrollView(.vertical, showsIndicators: false) {
-                
+
                 VStack(spacing: 0) {
-                    
+
                     VStack(spacing: 1) {
-                        
-                        if userData.exposureNotificationStatus != .active {
+
+                        if self.localStore.showHomeWelcomeMessage {
                             Button(action: {
-                                
-                                if self.userData.exposureNotificationStatus == .unknown ||
-                                    self.userData.exposureNotificationStatus == .disabled {
-                                    self.isShowingExposureSettings.toggle()
+                                withAnimation {
+                                    self.localStore.showHomeWelcomeMessage = false
                                 }
-                                
                             }) {
                                 Alert(
-                                    message: userData.exposureNotificationStatus.detailedDescription,
-                                    backgroundColor: Color("Alert Normal Color"),
-                                    showArror: (self.userData.exposureNotificationStatus == .unknown || self.userData.exposureNotificationStatus == .disabled)
+                                    message: NSLocalizedString("HOME_WELCOME_MESSAGE", comment: ""),
+                                    backgroundColor: Color("Alert Standard Color"),
+                                    showExclamation: false,
+                                    detailImage: Image("Alert Dismiss")
+                                )
+                            }
+                        }
+
+                        if localStore.exposureNotificationStatus != .active {
+                            Button(action: {
+
+                                if self.localStore.exposureNotificationStatus == .unknown ||
+                                    self.localStore.exposureNotificationStatus == .disabled ||
+                                    self.localStore.exposureNotificationStatus == .restricted {
+                                    self.isShowingExposureSettings.toggle()
+                                }
+
+                            }) {
+                                Alert(
+                                    message: localStore.exposureNotificationStatus.localizedDetailDescription,
+                                    backgroundColor: Color("Alert Standard Color"),
+                                    detailImage: (self.localStore.exposureNotificationStatus == .unknown || self.localStore.exposureNotificationStatus == .disabled ||
+                                        self.localStore.exposureNotificationStatus == .restricted) ? Image("Right Arrow") : nil
                                 )
                             }
                             .sheet(isPresented: $isShowingExposureSettings) {
-                                Setup1(dismissesAutomatically: true).environmentObject(self.userData)
+                                    Setup1(dismissesAutomatically: true)
+                                    .environmentObject(self.localStore)
                             }
                         }
-                        
-                        if userData.notificationsAuthorizationStatus != .authorized {
+
+                        if localStore.notificationsAuthorizationStatus != .authorized {
                             Button(action: {
-                                
-                                if self.userData.notificationsAuthorizationStatus == .denied {
+
+                                if self.localStore.notificationsAuthorizationStatus == .denied {
                                     guard let settingsUrl = URL(string: UIApplication.openSettingsURLString),
                                         UIApplication.shared.canOpenURL(settingsUrl) else {
                                             return
                                     }
                                     UIApplication.shared.open(settingsUrl, completionHandler: nil)
-                                }
-                                else {
+                                } else {
                                     self.isShowingNotificationSettings.toggle()
                                 }
-                                
+
                             }) {
                                 Alert(
-                                    message: userData.notificationsAuthorizationStatus.detailedDescription,
-                                    backgroundColor: Color("Alert Normal Color")
+                                    message: localStore.notificationsAuthorizationStatus.localizedDetailDescription,
+                                    backgroundColor: Color("Alert Standard Color")
                                 )
                             }
                             .sheet(isPresented: $isShowingNotificationSettings) {
-                                Setup2(dismissesAutomatically: true).environmentObject(self.userData)
+                                Setup2(dismissesAutomatically: true)
+                                    .environmentObject(self.localStore)
                             }
                         }
-                        
-                    }.padding(.top, .headerHeight)
+
+                    }.padding(.top, .largeHeaderHeight)
                         .zIndex(1) // Required for the shadow effect to be visible. Otherwise the content the follows below covers it.
-                    
+
                     ZStack(alignment: .top) {
-                        
+
                         VStack(spacing: 0) {
-                            
-                            Image("Family 2")
-                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: 232, alignment: .top)
-                                .background(LinearGradient(gradient: Gradient(colors: [Color(red: 0.263, green: 0.769, blue: 0.851, opacity: 1), Color.white.opacity(0.4)]), startPoint: .top, endPoint: .bottom))
-                                .padding(.bottom, .standardSpacing)
-                            
-                            Text("My Possible Exposures")
-                                .font(.custom("Montserrat-SemiBold", size: 24))
-                                .foregroundColor(Color("Title Text Color"))
+
+                            Image("Home")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(minWidth: 0, maxWidth: .infinity, alignment: .top)
+                                .accessibility(label: Text("HOME_IMAGE_ACCESSIBILITY_LABEL"))
+
+                            Text(verbatim: self.localStore.homeRiskLevel.description)
+                                .font(.custom("Montserrat-Bold", size: 18))
+                                .foregroundColor(Color.white)
+                                .padding(.vertical, .standardSpacing)
+                                .frame(maxWidth: .infinity, minHeight: .minTappableTargetDimension, alignment: .leading)
                                 .padding(.horizontal, 2 * .standardSpacing)
+                                .background(self.localStore.homeRiskLevel.color)
+
+                            NextSteps()
+                                .padding(.vertical, 2 * .standardSpacing)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            Button(action: {
-                                self.isShowingPossibleExposures.toggle()
-                            }) {
-                                PossibleExposureSummary()
-                                    .environmentObject(self.localStore)
-                            }
-                            .padding(.top, 8)
-                            .padding(.horizontal, 2 * .standardSpacing)
-                            .sheet(isPresented: $isShowingPossibleExposures) {
-                                PossibleExposures()
-                                    .environmentObject(self.userData)
-                                    .environmentObject(self.localStore)
-                            }
-                            
-                            Spacer(minLength: 2 * .standardSpacing)
-                            
-                            Text("Have a positive diagnosis? Share it anonymously to help your community stay safe.")
-                                .modifier(SubCallToAction())
-                                .frame(maxWidth: .infinity)
-                                .padding(.horizontal, 2 * .standardSpacing)
-                            
-                            Button(action: {
-                                self.isShowingReporting.toggle()
-                            }) {
-                                Text("Notify Others").modifier(SmallCallToAction())
-                            }
-                            .padding(.top, .standardSpacing)
-                            .padding(.bottom, .standardSpacing)
-                            .padding(.horizontal, 2 * .standardSpacing)
-                            .sheet(isPresented: $isShowingReporting) {
-                                Reporting().environmentObject(self.localStore)
-                            }
-                            
-                            Button(action: {
-                                ApplicationController.shared.shareApp()
-                            }) {
-                                Text("Share the App").modifier(SmallCallToAction())
-                            }
-                            .padding(.top, 2 * .standardSpacing)
-                            .padding(.horizontal, 2 * .standardSpacing)
-                            
-                            Image("Powered By CW Grey")
+                                .background(Color(UIColor.systemGray6))
+                                .sheet(isPresented: $isShowingReporting) {
+                                    ReportingStep1()
+                                        .environmentObject(self.localStore)
+                                }
+
+                            if self.localStore.homeRiskLevel != .verifiedPositive && !self.localStore.region.isDisabled {
+
+                                Spacer(minLength: 2 * .standardSpacing)
+
+                                Text("NOTIFY_OTHERS_CALL_TO_ACTION_TITLE")
+                                    .font(.custom("Montserrat-Semibold", size: 18))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 2 * .standardSpacing)
+
+                                Spacer(minLength: .standardSpacing)
+
+                                Text("NOTIFY_OTHERS_CALL_TO_ACTION_MESSAGE")
+                                    .modifier(SubCallToAction())
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 2 * .standardSpacing)
+
+                                Button(action: {
+                                    self.isShowingReporting.toggle()
+                                }) {
+                                    Text("HOME_NOTIFY_OTHERS_BUTTON").modifier(SmallCallToAction())
+                                }
                                 .padding(.top, 2 * .standardSpacing)
-                                .padding(.bottom, 3 * .standardSpacing)
+                                .padding(.bottom, .standardSpacing)
+                                .padding(.horizontal, 2 * .standardSpacing)
+
+                            } else if self.localStore.region.isDisabled {
+
+                                Spacer(minLength: 2 * .standardSpacing)
+
+                                Text("HOME_REGION_DISABLED_MESSAGE")
+                                    .modifier(SubCallToAction())
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 2 * .standardSpacing)
+
+                                Button(action: {
+                                    self.isShowingRegionSelection.toggle()
+                                }) {
+                                    Text("HOME_REGION_DISABLED_SELECT_OTHER").modifier(SmallCallToAction())
+                                }
+                                .sheet(isPresented: self.$isShowingRegionSelection) {
+                                    RegionSelection(
+                                        selectedRegionIndex: self.localStore.selectedRegionIndex,
+                                        dismissOnFinish: true
+                                    ).environmentObject(self.localStore)
+                                }
+                                .padding(.top, 2 * .standardSpacing)
+                                .padding(.bottom, .standardSpacing)
+                                .padding(.horizontal, 2 * .standardSpacing)
+                            }
+
+                            Image("Powered By CW for HA Grey")
+                                .accessibility(label: Text("POWERED_BY_CW_IMAGE_ACCESSIBILITY_LABEL"))
+                                .padding(.top, .standardSpacing)
+                                .padding(.bottom, .standardSpacing)
+
                         }
-                        
-                        //                            LinearGradient(gradient: Gradient(colors: [.init(red: 0.263, green: 0.769, blue: 0.851), .init(red: 1, green: 1, blue: 1, opacity: 0.4)]), startPoint: .top, endPoint: .bottom)
-                        //                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: 10, alignment: .top)
                     }
                 }
             }
-            
-            HeaderBar()
+
+            HeaderBar(showRegionSelection: true)
+                .environmentObject(self.localStore)
         }
     }
 }

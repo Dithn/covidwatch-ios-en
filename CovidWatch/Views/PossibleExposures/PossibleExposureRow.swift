@@ -6,19 +6,48 @@
 import SwiftUI
 
 struct PossibleExposureRow: View {
-    
-    let exposure: Exposure
-    
-    var body: some View {
-        HStack(spacing: 18) {
-            Image("Exposure Row High Risk")
-            Text(verbatim: DateFormatter.localizedString(from: exposure.date, dateStyle: .medium, timeStyle: .none))
-                .font(.custom("Montserrat-Regular", size: 14))
-                .foregroundColor(Color("Title Text Color"))
-            Spacer()
-            Image("Exposure Row Right Arrow")
+
+    let exposure: CodableExposureInfo
+
+    let isExpanded: Bool
+
+    func formattedDate() -> String {
+        return DateFormatter.localizedString(from: exposure.date, dateStyle: .medium, timeStyle: .none)
+    }
+
+    func accessibilityLabel() -> String {
+        if exposure.totalRiskScore.level == .high {
+            return String.localizedStringWithFormat(NSLocalizedString("HIGH_RISK_EXPOSURE_DATE_MESSAGE", comment: ""), formattedDate())
+        } else if exposure.totalRiskScore.level == .medium {
+            return String.localizedStringWithFormat(NSLocalizedString("MEDIUM_RISK_EXPOSURE_DATE_MESSAGE", comment: ""), formattedDate())
+        } else {
+            return String.localizedStringWithFormat(NSLocalizedString("LOW_RISK_EXPOSURE_DATE_MESSAGE", comment: ""), formattedDate())
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                self.formattedDateText
+                Spacer()
+                #if !DIST_APP_STORE
+                if self.isExpanded {
+                    Image("Arrow Up")
+                } else {
+                    Image("Arrow Down")
+                }
+                #endif
+            }
+            .accessibility(label: Text(verbatim: accessibilityLabel()))
+            .frame(maxWidth: .infinity, maxHeight: 54, alignment: .leading)
+        }
+    }
+
+    var formattedDateText: Text {
+        Text(" ") +
+        Text(verbatim: formattedDate())
+            .font(.custom("Montserrat-Semibold", size: 14))
+            .foregroundColor(Color("Text Color"))
     }
 }
 

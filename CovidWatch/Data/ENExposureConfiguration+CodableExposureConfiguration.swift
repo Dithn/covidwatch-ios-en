@@ -6,9 +6,9 @@
 import Foundation
 import ExposureNotification
 
-@available(iOS 13.5, *)
+@available(iOS 13.6, *)
 extension ENExposureConfiguration {
-    
+
     convenience init(
         _ codableExposureConfiguration: CodableExposureConfiguration
     ) {
@@ -18,6 +18,10 @@ extension ENExposureConfiguration {
         self.daysSinceLastExposureLevelValues = codableExposureConfiguration.daysSinceLastExposureLevelValues as [NSNumber]
         self.durationLevelValues = codableExposureConfiguration.durationLevelValues as [NSNumber]
         self.transmissionRiskLevelValues = codableExposureConfiguration.transmissionRiskLevelValues as [NSNumber]
+        #if DEBUG_CALIBRATION
+        self.metadata = ["attenuationDurationThresholds": codableExposureConfiguration.attenuationDurationThresholdList[0]]
+        #else
         self.metadata = ["attenuationDurationThresholds": codableExposureConfiguration.attenuationDurationThresholds]
+        #endif
     }
 }

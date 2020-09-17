@@ -5,55 +5,26 @@
 import UserNotifications
 import UIKit
 import os.log
+import SwiftUI
 
-// TODO: Clean up this file
 extension UNNotificationCategory {
-    
-    public static let exposureDetectionSummary = "exposureDetectionSummary"
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
-    
+
     // MARK: User Notification Center
-    
+
     func configureCurrentUserNotificationCenter() {
         let center = UNUserNotificationCenter.current()
-        let exposureSummaryCategory = UNNotificationCategory(
-            identifier: UNNotificationCategory.exposureDetectionSummary,
-            actions: [],
-            intentIdentifiers: [],
-            hiddenPreviewsBodyPlaceholder: NSLocalizedString("Exposure Detection Summary", comment: ""),
-            categorySummaryFormat: nil, options: []
-        )
-        center.setNotificationCategories([exposureSummaryCategory])
         center.delegate = self
     }
-    
-    public func showExposureDetectionSummaryUserNotification(daysSinceLastExposure: Int) {
-        let notificationContent = UNMutableNotificationContent()
-        notificationContent.categoryIdentifier = UNNotificationCategory.exposureDetectionSummary
-        notificationContent.sound = .defaultCritical
-        // When exporting for localizations Xcode doesn't look for
-        // NSString.localizedUserNotificationString(forKey:, arguments:))
-        _ = NSLocalizedString("%d day(s) since last exposure", comment: "")
-        notificationContent.body = NSString.localizedUserNotificationString(
-            forKey: "%d day(s) since last exposure",
-            arguments: [daysSinceLastExposure]
-        )
-        let notificationRequest = UNNotificationRequest(
-            identifier: UNNotificationCategory.exposureDetectionSummary,
-            content: notificationContent,
-            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 0.1, repeats: false)
-        )
-        addToCurrentUserNotificationCenterNotificationRequest(notificationRequest)
-    }
-    
+
     private func addToCurrentUserNotificationCenterNotificationRequest(
         _ notificationRequest: UNNotificationRequest
     ) {
         UNUserNotificationCenter.current().getNotificationSettings(
             completionHandler: { (settings) in
-                
+
                 guard settings.authorizationStatus == .authorized ||
                     settings.authorizationStatus == .provisional else {
                         return
@@ -71,7 +42,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                 )
         })
     }
-    
+
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
@@ -79,24 +50,28 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     ) {
         completionHandler([.alert, .sound])
     }
-    
+
+    // TODO: File bug, because this doesn't get called for Exposure Notifications.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        if let viewController = self.window?.rootViewController as? UIHostingController<ContentView> {
+            viewController.rootView.presentationMode.wrappedValue.dismiss()
+        }
         completionHandler()
     }
-    
+
     func requestUserNotificationAuthorization(provisional: Bool = true) {
         let options: UNAuthorizationOptions = provisional ?
             [.alert, .sound, .badge, .providesAppNotificationSettings, .provisional] :
             [.alert, .sound, .badge, .providesAppNotificationSettings]
-        
+
         UNUserNotificationCenter.current().requestAuthorization(
             options: options,
-            completionHandler: { (granted, error) in
-                
+            completionHandler: { (_, error) in
+
                 DispatchQueue.main.async {
                     if let error = error {
                         UIApplication.shared.topViewController?.present(error, animated: true)
@@ -105,7 +80,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                 }
         })
     }
-    
+
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         openSettingsFor notification: UNNotification?
